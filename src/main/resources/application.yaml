@@ -1,6 +1,6 @@
 server:
   port: 8080
-  spring:
+spring:
     application:
       name: user-service
     datasource:
@@ -25,7 +25,7 @@ server:
 #    instance:
 #      prefer-ip-address: true
 #      instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
-  management:
+management:
     endpoints:
       web:
         exposure:
