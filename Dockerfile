@@ -1,10 +1,14 @@
-# Use the official OpenJDK 17 image from Docker Hub
-FROM openjdk:17
-# Set working directory inside the container
+# Use Amazon Corretto 21 as base image
+FROM amazoncorretto:21-alpine
+
+# Set working directory
 WORKDIR /app
-# Copy the compiled Java application JAR file into the container
-COPY ./target/user-service-0.0.1-SNAPSHOT.jar /app
-# Expose the port the Spring Boot application will run on
+
+# Copy Maven build output (JAR file) into container
+COPY target/user-service-0.0.1-SNAPSHOT.jar /app/user-service-0.0.1-SNAPSHOT.jar
+
+# Expose application port (adjust if needed)
 EXPOSE 8080
-# Command to run the application
-CMD ["java", "-jar", "user-service-0.0.1-SNAPSHOT.jar"]
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "/app/user-service-0.0.1-SNAPSHOT.jar"]
