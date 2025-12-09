@@ -4,38 +4,39 @@ phases:
   install:
     runtime-versions:
       java: corretto21
+
   pre_build:
     commands:
-      - mvn clean install
       - echo Logging in to Amazon ECR...
-      - aws --version
-      - REPOSITORY_URI=654023866684.dkr.ecr.ap-south-2.amazonaws.com/user-service-aws
-      - aws ecr get-login-password --region ap-south-2 | docker login --username AWS --password-stdin $REPOSITORY_URI
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+      - aws ecr get-login-password --region ap-south-2 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com
+
+      # Retrieve SSH Key securely
+      - echo "Retrieving SSH Key..."
+      - aws ssm get-parameter --name "/app/ec2-key" --with-decryption --query "Parameter.Value" --output text > key.pem
+      - chmod 400 key.pem
+
   build:
     commands:
       - echo Build started on `date`
-      - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:latest .
-      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      - echo Building JAR...
+      - mvn clean package -DskipTests
+      - echo Building Docker Image...
+      - docker build -t $IMAGE_REPO_NAME:latest .
+      - docker tag $IMAGE_REPO_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com/$IMAGE_REPO_NAME:latest
+
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo Pushing the Docker images...
-      - docker push $REPOSITORY_URI:latest
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Writing image definitions file...
-      - printf '[{"name":"user-service","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-      - echo Writing image definitions file...
-      # add your container name
-      - DOCKER_CONTAINER_NAME=user-service-aws
-      - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-      - echo $DOCKER_CONTAINER_NAME
-      - echo printing imagedefinitions.json
-      - cat imagedefinitions.json
-
-artifacts:
-  files:
-    - imagedefinitions.json
-    - target/user-service-0.0.1-SNAPSHOT.jar
+      - echo Pushing Image to ECR...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com/$IMAGE_REPO_NAME:latest
+      - echo "Deploying to EC2 via SSH..."
+      # SSH Command: Connects to EC2 -> Pulls new image -> Restarts container
+      - ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@$EC2_IP_ADDRESS "
+        aws ecr get-login-password --region ap-south-2 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com &&
+        docker pull $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com/$IMAGE_REPO_NAME:latest &&
+        docker stop user-service || true &&
+        docker rm user-service || true &&
+        docker run -d --name user-service -p 80:8080 \
+        -e DB_URL='jdbc:mysql://$DB_ENDPOINT:3306/userdb?createDatabaseIfNotExist=true' \
+        -e DB_USERNAME=$DB_USER \
+        -e DB_PASSWORD=$DB_PASS \
+        $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com/$IMAGE_REPO_NAME:latest"

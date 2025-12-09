@@ -4,9 +4,9 @@ spring:
     application:
       name: user-service
     datasource:
-      url: jdbc:mysql://user-service-db.ctswou0q49po.ap-south-2.rds.amazonaws.com:3306/user_db?createDatabaseIfNotExist=true
-      username: admin
-      password: MohanRajaMM55
+      url: ${DB_URL:jdbc:mysql://localhost:3306/userdb?createDatabaseIfNotExist=true}
+      username: ${DB_USERNAME:root}
+      password: ${DB_PASSWORD:rootpassword}
       driver-class-name: com.mysql.cj.jdbc.Driver
     jpa:
       hibernate:
