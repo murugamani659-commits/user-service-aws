@@ -12,7 +12,7 @@ phases:
 
       # Retrieve SSH Key securely
       - echo "Retrieving SSH Key..."
-      - aws ssm get-parameter --name "/app/ec2-key" --with-decryption --query "Parameter.Value" --output text > key.pem
+      - aws ssm get-parameter --name "/app/ecsec2-key" --with-decryption --query "Parameter.Value" --output text > key.pem
       - chmod 400 key.pem
 
   build:
