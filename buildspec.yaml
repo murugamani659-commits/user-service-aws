@@ -35,7 +35,7 @@ phases:
         docker pull $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com/$IMAGE_REPO_NAME:latest &&
         docker stop ecsec2registry || true &&
         docker rm ecsec2registry || true &&
-        docker run -d --name ecsec2registry -p 80:8080 \
+        docker run -d --name ecsec2registry -p 80:8080
         -e DB_URL='jdbc:mysql://$DB_ENDPOINT:3306/userdb?createDatabaseIfNotExist=true' \
         -e DB_USERNAME=$DB_USER \
         -e DB_PASSWORD=$DB_PASS \
