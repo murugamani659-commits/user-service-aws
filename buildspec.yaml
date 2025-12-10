@@ -30,7 +30,7 @@ phases:
     - docker push $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com/$IMAGE_REPO_NAME:latest
     - echo "Deploying to EC2 via SSH..."
     # SSH Command: Connects to EC2 -> Pulls new image -> Restarts container
-    - ssh -o StrictHostKeyChecking=no -i key.pem ec2-user@$EC2_IP_ADDRESS "
+    - ssh -o StrictHostKeyChecking=no -i ecsec2key.pem ec2-user@$EC2_IP_ADDRESS "
       aws ecr get-login-password --region ap-south-2 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com && \
       docker pull $AWS_ACCOUNT_ID.dkr.ecr.ap-south-2.amazonaws.com/$IMAGE_REPO_NAME:latest && \
       docker stop ecsec2registry || true && \
